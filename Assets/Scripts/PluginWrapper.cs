@@ -8,11 +8,11 @@ using UnityEngine.UI;
 public class PluginWrapper : MonoBehaviour
 {
     // For Inspector View Only
-    [Header("Hard-coded Static Variables:")]
+    [Header("Plugin & Device Names")]
     [ReadOnly] public string _pluginName = "com.rutgersece.capstone2020.agoravr.blelibrary.AndroidBLE";
     private const string pluginName = "com.rutgersece.capstone2020.agoravr.blelibrary.AndroidBLE";
 
-    [ReadOnly] [SerializeField] private string BLE_DeviceName = "BLEButton"; //TODO: Placeholder device name
+    [SerializeField] private string BLE_DeviceName = "BLEButton"; //TODO: Placeholder device name
 
     private static AndroidJavaClass _pluginClass;
     private static AndroidJavaObject _pluginInstance;
@@ -39,12 +39,12 @@ public class PluginWrapper : MonoBehaviour
         }
     }
 
-    [Header("Textboxes:")]
+    [Header("Textboxes")]
     [SerializeField] private TextMeshProUGUI BLESetupSuccess;
     [SerializeField] private TextMeshProUGUI BLETarget;
     [SerializeField] private TextMeshProUGUI BLEInfo;
 
-    [Header("Other Fields:")]
+    [Header("Other Fields")]
     [SerializeField] private int delay = 5;
 
     void Start()
@@ -58,7 +58,8 @@ public class PluginWrapper : MonoBehaviour
         }
     }
 
-    private void BLEsetup() {
+    private void BLEsetup()
+    {
         // Get Android Activity For Context
         AndroidJavaClass playerClass = new AndroidJavaClass ("com.unity3d.player.UnityPlayer");
         AndroidJavaObject currentActivityObject = playerClass.GetStatic<AndroidJavaObject> ("currentActivity");
@@ -73,12 +74,13 @@ public class PluginWrapper : MonoBehaviour
 
     private void checkPermissions()
     {
-        if (!Permission.HasUserAuthorizedPermission(Permission.FineLocation)){
+        if (!Permission.HasUserAuthorizedPermission(Permission.FineLocation)) {
             Permission.RequestUserPermission(Permission.FineLocation);
         }
     }
 
-    public void scanButton() {
+    public void scanButton()
+    {
         PluginInstance.Call<bool>("BLEsetup", BLE_DeviceName);
     }
 
