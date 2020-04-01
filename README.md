@@ -2,7 +2,7 @@
 
 This project has a minimum API requirement of Android 7.1.1. Use any Android smartphone with the minimum requirement to run.
 
-To test, turn on the Arduino Nano 33 BLE while running @tmose1106's BLEButton script (https://github.com/Agora-VR/arduino-ble/tree/master/BLE_Button).
+To test, turn on the Arduino Nano 33 BLE while running @tmose1106's BLE_HRM code (https://github.com/Agora-VR/arduino-ble/tree/master/BLE_HRM).
 
 If you have Bluetooth or Location services disabled on your phone, "BLE Setup Success" will be False. Be sure to accept the location access request when loading the app up for the first time.
 
