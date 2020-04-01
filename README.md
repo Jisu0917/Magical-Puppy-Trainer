@@ -8,8 +8,13 @@ If you have Bluetooth or Location services disabled on your phone, "BLE Setup Su
 
 The plugin scans for nearby BLE devices for 10 seconds. After 10 seconds it will stop scanning (to save battery life). If the Arduino is on and running the BLE script, your device should be able to find it and output the "Scanned Device Info" data. There is a few seconds of delay to allow the plugin to find the device (doesn't actually take that long to find it, but I added the delay in case there is interference or some other factor that causes it to not find the device immediately.)
 
-If you miss the 10 second window to either accept the location permission or have the Arduino running nearby, you can press the "Scan" button at the bottom of the screen to scan for another 10 seconds.
+If you miss the 10 second window to either accept the location permission or have the Arduino running nearby, you can press the "Scan & Connect" button at the bottom of the screen to scan for another 10 seconds.
 
+Once connected, it will Discover Services. This will take several seconds. Once finished, it will display "Services Discovered." and that is when it will start reading characteristics from the Arduino based on a notification system.
+
+Place your finger on the MAXREFDES117# sensor to begin taking measurments. In a few seconds, your heart rate and blood oxygenation will appear on screen!
+
+There is a button called "Disconnect" which you can press to disconnect from the Arduino when you are done.
 
 ### Sample Logcat Output
 
