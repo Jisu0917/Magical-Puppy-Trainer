@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -12,8 +13,22 @@ public class PluginWrapper : MonoBehaviour
     [ReadOnly] public string _pluginName = "com.rutgersece.capstone2020.agoravr.blelibrary.AndroidBLE";
     private const string pluginName = "com.rutgersece.capstone2020.agoravr.blelibrary.AndroidBLE";
 
-    [SerializeField] private string BLE_DeviceName = "BLEButton"; //TODO: Placeholder device name
+    [SerializeField] private string BLEDeviceName = "AgoraVR-BLE"; //TODO: Placeholder device name
+    [SerializeField] private string serviceUUID = "8bff20de-32fb-4350-bddb-afe103ef9640";
+    [SerializeField] private string heartRateUUID = "1c8dd778-e8c3-45b0-a9f3-48c33a400315";
+    [SerializeField] private string pulseOximetryUUID = "b8ae0c39-6204-407c-aa43-43087ec29a63";
 
+    [Header("Textboxes")]
+    [SerializeField] private TextMeshProUGUI BLESetupSuccess;
+    [SerializeField] private TextMeshProUGUI BLETarget;
+    [SerializeField] private TextMeshProUGUI ConnectDiscover;
+    [SerializeField] private TextMeshProUGUI HeartRate;
+    [SerializeField] private TextMeshProUGUI PulseOximetry;
+
+    [Header("Read Data Interval")]
+    [SerializeField] private float delay = 1;
+
+    private bool stop = false;
     private static AndroidJavaClass _pluginClass;
     private static AndroidJavaObject _pluginInstance;
 
@@ -39,37 +54,64 @@ public class PluginWrapper : MonoBehaviour
         }
     }
 
-    [Header("Textboxes")]
-    [SerializeField] private TextMeshProUGUI BLESetupSuccess;
-    [SerializeField] private TextMeshProUGUI BLETarget;
-    [SerializeField] private TextMeshProUGUI BLEInfo;
-
-    [Header("Other Fields")]
-    [SerializeField] private int delay = 5;
-
     void Start()
     {
         checkPermissions(); // Make sure we have the correct permissions for BLE
 
         if(Input.location.isEnabledByUser) {
-            BLEsetup();                         // Starts setup immediately if permissions are already enabled.
+            StartCoroutine(startBLE());         // Starts setup immediately if permissions are already enabled.
         } else {
-            StartCoroutine(waitForLocation());  // Delays for 10 seconds for the user to accept location permission.
+            StartCoroutine(waitForLocation());  // For first time opening of app.
         }
     }
 
-    private void BLEsetup()
+    private IEnumerator startBLE()
     {
-        // Get Android Activity For Context
+        // Get Android activity for context.
         AndroidJavaClass playerClass = new AndroidJavaClass ("com.unity3d.player.UnityPlayer");
         AndroidJavaObject currentActivityObject = playerClass.GetStatic<AndroidJavaObject> ("currentActivity");
 
-        // Setup BLE Using Plugin Calls
+        // Setup BLE using plugin calls.
         PluginInstance.Call("setContext", currentActivityObject);
-        BLESetupSuccess.text = "BLE Setup Success: " + PluginInstance.Call<bool>("BLEsetup", BLE_DeviceName).ToString();
-        BLETarget.text = "Target Device Name: " + BLE_DeviceName;
+        BLESetupSuccess.text = String.Format("BLE Setup Success: {0}", PluginInstance.Call<bool>("BLEsetup", BLEDeviceName));
+        BLETarget.text = String.Format("Target Device Name: {0}", BLEDeviceName);
 
-        StartCoroutine(getBLEInfo());
+        // Connect to device after a few seconds of scan time.
+        yield return new WaitForSeconds(5);
+        PluginInstance.Call("connectToDevice", serviceUUID, heartRateUUID, pulseOximetryUUID);
+        StartCoroutine(discover());
+    }
+
+    // Gets data from plugin at intervals of 'delay' seconds.
+    private IEnumerator getData()
+    {
+        HeartRate.text = String.Format("Heart Rate: {0}", PluginInstance.Get<int>("heartRate"));
+        PulseOximetry.text = String.Format("Blood Oxygenation: {0:f}", PluginInstance.Get<float>("pulseOximetry"));
+
+        yield return new WaitForSeconds(delay);
+        StartCoroutine(getData());
+    }
+
+    // Show on UI if services are discovered (takes several seconds)
+    private IEnumerator discover()
+    {
+        if (stop) {
+            // do nothing
+        } else if (PluginInstance.Get<bool>("discovered")) {
+            ConnectDiscover.text = "Services Discovered.";
+            StartCoroutine(getData());
+        } else {
+            ConnectDiscover.text = "Discovering Services...";
+            yield return new WaitForSeconds(1);
+            StartCoroutine(discover());
+        }
+    }
+
+    // Delays for 10 seconds for the user to accept location permission.
+    private IEnumerator waitForLocation()
+    {
+        yield return new WaitForSeconds(10);
+        StartCoroutine(startBLE());
     }
 
     private void checkPermissions()
@@ -81,20 +123,27 @@ public class PluginWrapper : MonoBehaviour
 
     public void scanButton()
     {
-        PluginInstance.Call<bool>("BLEsetup", BLE_DeviceName);
+        reset();
+        stop = false;
+        StartCoroutine(startBLE());
     }
 
-    IEnumerator getBLEInfo()
+    public void reset()
     {
-        yield return new WaitForSeconds(delay);
-        BLEInfo.text = "Scanned Device Info: " + PluginInstance.Get<string>("btDeviceInfo");
-        StartCoroutine(getBLEInfo());
+        stop = true;
+        StopCoroutine(discover());
+        StopCoroutine(getData());
+        PluginInstance.Call("close");
+        BLESetupSuccess.text = "BLE Setup Success: ";
+        BLETarget.text = "Target Device Name: ";
+        ConnectDiscover.text = "Disconnected.";
+        HeartRate.text = "Heart Rate: ";
+        PulseOximetry.text = "Blood Oxygenation: ";
     }
 
-    IEnumerator waitForLocation()
+    void OnApplicationQuit()
     {
-        yield return new WaitForSeconds(10);
-        BLEsetup();
+        PluginInstance.Call("close");
     }
 
 }
