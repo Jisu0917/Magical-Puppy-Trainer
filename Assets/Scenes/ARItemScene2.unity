@@ -841,7 +841,7 @@ MonoBehaviour:
   - {fileID: 9100000, guid: 881ea4b791aa886428b7081af2c18fe4, type: 2}
   - {fileID: 9100000, guid: 2c61388e3f8cc8b4789a1a5db2f04263, type: 2}
   objectsToCheckCollision: []
-  collisionDistance: 0.1
+  collisionDistance: 0
 --- !u!1001 &785879762
 PrefabInstance:
   m_ObjectHideFlags: 0
