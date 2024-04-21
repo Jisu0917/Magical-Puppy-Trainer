@@ -3,7 +3,14 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - Front
+  - CloseUp
+  - Back
+  - Moving
+  - Heart
+  - Ball
+  - Star
   layers:
   - Default
   - TransparentFX

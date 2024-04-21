@@ -10,10 +10,10 @@ public class PluginWrapper : MonoBehaviour
 {
     // For Inspector View Only
     [Header("Plugin & Device Names")]
-    [ReadOnly] public string _pluginName = "com.rutgersece.capstone2020.agoravr.blelibrary.AndroidBLE";
-    private const string pluginName = "com.rutgersece.capstone2020.agoravr.blelibrary.AndroidBLE";
+    [ReadOnly] public string _pluginName = "com.magical.puppy.trainer.androidBLE";
+    private const string pluginName = "com.magical.puppy.trainer.androidBLE";
 
-    [SerializeField] private string BLEDeviceName = "AgoraVR-BLE"; //TODO: Placeholder device name
+    [SerializeField] private string BLEDeviceName = "MyPet-BLE"; //TODO: Placeholder device name
     [SerializeField] private string serviceUUID = "8bff20de-32fb-4350-bddb-afe103ef9640";
     [SerializeField] private string heartRateUUID = "1c8dd778-e8c3-45b0-a9f3-48c33a400315";
     [SerializeField] private string pulseOximetryUUID = "b8ae0c39-6204-407c-aa43-43087ec29a63";
@@ -32,10 +32,13 @@ public class PluginWrapper : MonoBehaviour
     private static AndroidJavaClass _pluginClass;
     private static AndroidJavaObject _pluginInstance;
 
+    public static string shape = "";
+
     public static AndroidJavaClass PluginClass
     {
-        get {
-            if(_pluginClass == null)
+        get
+        {
+            if (_pluginClass == null)
             {
                 _pluginClass = new AndroidJavaClass(pluginName);
             }
@@ -45,8 +48,9 @@ public class PluginWrapper : MonoBehaviour
 
     public static AndroidJavaObject PluginInstance
     {
-        get {
-            if(_pluginInstance == null)
+        get
+        {
+            if (_pluginInstance == null)
             {
                 _pluginInstance = PluginClass.CallStatic<AndroidJavaObject>("getInstance");
             }
@@ -58,9 +62,12 @@ public class PluginWrapper : MonoBehaviour
     {
         checkPermissions(); // Make sure we have the correct permissions for BLE
 
-        if(Input.location.isEnabledByUser) {
+        if (Input.location.isEnabledByUser)
+        {
             StartCoroutine(startBLE());         // Starts setup immediately if permissions are already enabled.
-        } else {
+        }
+        else
+        {
             StartCoroutine(waitForLocation());  // For first time opening of app.
         }
     }
@@ -68,8 +75,8 @@ public class PluginWrapper : MonoBehaviour
     private IEnumerator startBLE()
     {
         // Get Android activity for context.
-        AndroidJavaClass playerClass = new AndroidJavaClass ("com.unity3d.player.UnityPlayer");
-        AndroidJavaObject currentActivityObject = playerClass.GetStatic<AndroidJavaObject> ("currentActivity");
+        AndroidJavaClass playerClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+        AndroidJavaObject currentActivityObject = playerClass.GetStatic<AndroidJavaObject>("currentActivity");
 
         // Setup BLE using plugin calls.
         PluginInstance.Call("setContext", currentActivityObject);
@@ -85,8 +92,35 @@ public class PluginWrapper : MonoBehaviour
     // Gets data from plugin at intervals of 'delay' seconds.
     private IEnumerator getData()
     {
-        HeartRate.text = String.Format("Heart Rate: {0}", PluginInstance.Get<int>("heartRate"));
-        PulseOximetry.text = String.Format("Blood Oxygenation: {0:f}", PluginInstance.Get<float>("pulseOximetry"));
+        Debug.Log(PluginInstance.Get<int>("heartRate"));
+        Debug.Log(PluginInstance.Get<int>("pulseOximetry"));
+
+        int accuracy = PluginInstance.Get<int>("pulseOximetry");
+        if (accuracy > 50)
+        {
+            int shapeInt = PluginInstance.Get<int>("heartRate");
+            switch (shapeInt)
+            {
+                case 0:
+                    // circle
+                    shape = "circle";
+                    break;
+                case 1:
+                    // heart
+                    shape = "heart";
+                    break;
+                case 2:
+                    // star
+                    shape = "star";
+                    break;
+            }
+        } else
+        {
+            shape = "none";
+        }
+
+        HeartRate.text = String.Format("Shape: {0}", shape);
+        PulseOximetry.text = String.Format("Accuracy: {0}", PluginInstance.Get<int>("pulseOximetry"));
 
         yield return new WaitForSeconds(delay);
         StartCoroutine(getData());
@@ -95,12 +129,17 @@ public class PluginWrapper : MonoBehaviour
     // Show on UI if services are discovered (takes several seconds)
     private IEnumerator discover()
     {
-        if (stop) {
+        if (stop)
+        {
             // do nothing
-        } else if (PluginInstance.Get<bool>("discovered")) {
+        }
+        else if (PluginInstance.Get<bool>("discovered"))
+        {
             ConnectDiscover.text = "Services Discovered.";
             StartCoroutine(getData());
-        } else {
+        }
+        else
+        {
             ConnectDiscover.text = "Discovering Services...";
             yield return new WaitForSeconds(1);
             StartCoroutine(discover());
@@ -116,7 +155,8 @@ public class PluginWrapper : MonoBehaviour
 
     private void checkPermissions()
     {
-        if (!Permission.HasUserAuthorizedPermission(Permission.FineLocation)) {
+        if (!Permission.HasUserAuthorizedPermission(Permission.FineLocation))
+        {
             Permission.RequestUserPermission(Permission.FineLocation);
         }
     }
@@ -137,8 +177,8 @@ public class PluginWrapper : MonoBehaviour
         BLESetupSuccess.text = "BLE Setup Success: ";
         BLETarget.text = "Target Device Name: ";
         ConnectDiscover.text = "Disconnected.";
-        HeartRate.text = "Heart Rate: ";
-        PulseOximetry.text = "Blood Oxygenation: ";
+        HeartRate.text = "Shape: ";
+        PulseOximetry.text = "Accuracy: ";
     }
 
     void OnApplicationQuit()

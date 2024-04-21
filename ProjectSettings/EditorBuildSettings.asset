@@ -5,7 +5,35 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/BLE Test Scene.unity
     guid: 9fc0d4010bbf28b4594072e72b8655ab
-  m_configObjects: {}
+  - enabled: 1
+    path: Assets/Scenes/MyPetScene.unity
+    guid: e2d0bb3f11de9d4459564597f97c992d
+  - enabled: 1
+    path: Assets/Scenes/ARItemScene2.unity
+    guid: b6e7bdcac786b3441b4831176d92ae61
+  - enabled: 1
+    path: Assets/Scenes/ARItemScene.unity
+    guid: cbaa2bed832681546a414127b47fb9fc
+  - enabled: 1
+    path: Assets/Scenes/PetNameScene.unity
+    guid: 712bdee035854914e8d9edb540f68be2
+  - enabled: 1
+    path: Assets/Scenes/PetControllerScene.unity
+    guid: 49ccedeb29be4b548a231f22f6f07346
+  - enabled: 1
+    path: Assets/Scenes/PetItemScene.unity
+    guid: 067b96c4be681c44e95d8c4d14a8db4d
+  m_configObjects:
+    Unity.XR.Oculus.Settings: {fileID: 11400000, guid: a2c5ec02662f5174183e1657b4a3993f,
+      type: 2}
+    UnityEditor.XR.ARCore.ARCoreSettings: {fileID: 11400000, guid: a76584c40da92e44b8c65010ef029401,
+      type: 2}
+    com.unity.xr.arfoundation.simulation_settings: {fileID: 11400000, guid: 91cf312233af18e46aaf871279fb77e5,
+      type: 2}
+    com.unity.xr.management.loader_settings: {fileID: 11400000, guid: ca03fb827820aff498d61408461d0f21,
+      type: 2}
+    xr.sdk.mock-hmd.settings: {fileID: 11400000, guid: 4b06b5210b64a0549a1672ea2be482b7,
+      type: 2}
