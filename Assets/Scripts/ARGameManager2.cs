@@ -31,6 +31,7 @@ public class ARGameManager2 : MonoBehaviour
     private Vector3 lastCameraPosition;
     private bool isCoroutineRunning = false;
 
+    [SerializeField] public List<RuntimeAnimatorController> controllers = new List<RuntimeAnimatorController>();
     [SerializeField] List<Transform> objectsToCheckCollision = new List<Transform>();
     [SerializeField] float collisionDistance = 0.0f;
 
@@ -94,9 +95,17 @@ public class ARGameManager2 : MonoBehaviour
 
     void RotateToFollow(Vector3 targetPosition)
     {
-        Vector3 directionToTarget = (targetPosition - petObject.transform.position).normalized;
-        Quaternion targetRotation = Quaternion.LookRotation(directionToTarget, Vector3.up);
-        petObject.transform.rotation = targetRotation;
+        petAnimator = petObject.GetComponent<Animator>();
+        petAnimator.applyRootMotion = false;
+
+        // 펫과 타겟 사이의 방향 벡터를 계산합니다.
+        Vector3 directionToTarget = targetPosition - petObject.transform.position;
+        // 방향 벡터의 회전 각도를 구합니다.
+        Quaternion targetRotation = Quaternion.LookRotation(directionToTarget);
+        // 펫의 회전을 부드럽게 보간합니다.
+        petObject.transform.rotation = Quaternion.Lerp(petObject.transform.rotation, targetRotation, Time.deltaTime * 5f);
+
+        petAnimator.applyRootMotion = true;
     }
 
     Transform FindNearestObject()
@@ -130,19 +139,39 @@ public class ARGameManager2 : MonoBehaviour
     {
         isCoroutineRunning = true;
 
-        RotateToFollow(obj.position);
-        yield return new WaitForSeconds(0.5f);
-
-        MoveTo(obj.position);
         float distance = Mathf.Abs(Vector3.Distance(petObject.transform.position, obj.position));
 
         if (distance <= collisionDistance)
         {
             HandleCollision(obj);
+            // 애니메이션을 재생하고 애니메이션이 끝날 때까지 대기합니다.
+            petAnimator = petObject.GetComponent<Animator>();
+            if (obj.gameObject.CompareTag("Heart"))
+            {
+                yield return StartCoroutine(PlayAnimationAndWait(0));
+            }
+            else if (obj.gameObject.CompareTag("Ball"))
+            {
+                yield return StartCoroutine(PlayAnimationAndWait(1));
+            }
+            else if (obj.gameObject.CompareTag("Star"))
+            {
+                yield return StartCoroutine(PlayAnimationAndWait(2));
+            }
         }
+
+        yield return new WaitForSeconds(0.5f);
+        // 충돌한 오브젝트의 위치를 향해 petObject가 회전합니다.
+        RotateToFollow(obj.position);
+        yield return new WaitForSeconds(0.5f);
+
+
+        // 방향 전환 후에 이동합니다.
+        MoveTo(obj.position);
 
         isCoroutineRunning = false;
     }
+
 
     void HandleCollision(Transform obj)
     {
@@ -153,44 +182,43 @@ public class ARGameManager2 : MonoBehaviour
 
         if (distance <= collisionDistance)
         {
-            petAnimator = petObject.GetComponent<Animator>();
             if (obj.gameObject.CompareTag("Heart"))
             {
                 heartTMPro.text = String.Format("Heart : {0}", ++hearts);
-                Debug.Log("Heart animation");
             }
             else if (obj.gameObject.CompareTag("Ball"))
             {
                 ballTMPro.text = String.Format("Ball : {0}", ++balls);
-                Debug.Log("Ball animation");
             }
             else if (obj.gameObject.CompareTag("Star"))
             {
                 starTMPro.text = String.Format("Star : {0}", ++stars);
-                Debug.Log("Star animation");
             }
         }
     }
 
-    IEnumerator PlayAnimationAndWait(string animationName)
+    IEnumerator PlayAnimationAndWait(int index)
     {
-        petAnimator.Play(animationName);
-        AnimatorStateInfo animState = petAnimator.GetCurrentAnimatorStateInfo(0);
+        petAnimator = petObject.GetComponent<Animator>();
+        petAnimator.runtimeAnimatorController = controllers[index];
 
-        while (!animState.IsName(animationName))
-        {
-            yield return null;
-            animState = petAnimator.GetCurrentAnimatorStateInfo(0);
-        }
+        // 루트 모션 비활성화
+        //petAnimator.applyRootMotion = false;
 
-        while (animState.normalizedTime < 1.0f)
-        {
-            yield return null;
-            animState = petAnimator.GetCurrentAnimatorStateInfo(0);
-        }
+        petAnimator.Play("Idle");
 
-        Debug.Log("Animation finished: " + animationName);
+        // 애니메이션 재생이 끝날 때까지 대기합니다.
+        float animationLength = petAnimator.GetCurrentAnimatorClipInfo(0)[0].clip.length;
+        yield return new WaitForSeconds(animationLength);
+
+        // 루트 모션 다시 활성화
+        //petAnimator.applyRootMotion = true;
+
+        petAnimator.runtimeAnimatorController = controllers[3];  //Walk_forward
+
+        petAnimator.Play("Idle");
     }
+
 
     void makeObject(GameObject objectPrefab, string sTag)
     {

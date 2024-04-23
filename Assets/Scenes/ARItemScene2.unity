@@ -270,7 +270,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 121237765}
-  - component: {fileID: 121237767}
   m_Layer: 0
   m_Name: PetPrefab
   m_TagString: Untagged
@@ -290,37 +289,9 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
-  m_Children:
-  - {fileID: 728202820}
+  m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!54 &121237767
-Rigidbody:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 121237764}
-  serializedVersion: 4
-  m_Mass: 1
-  m_Drag: 0
-  m_AngularDrag: 0.05
-  m_CenterOfMass: {x: 0, y: 0, z: 0}
-  m_InertiaTensor: {x: 1, y: 1, z: 1}
-  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ImplicitCom: 1
-  m_ImplicitTensor: 1
-  m_UseGravity: 0
-  m_IsKinematic: 1
-  m_Interpolate: 0
-  m_Constraints: 0
-  m_CollisionDetection: 2
 --- !u!1 &208419250
 GameObject:
   m_ObjectHideFlags: 0
@@ -509,7 +480,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 121237765}
+    m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: b4717a7a031ad2d4cb8585a4fe45859c,
         type: 3}
@@ -643,13 +614,11 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 728202822}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: b4717a7a031ad2d4cb8585a4fe45859c,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 728202823}
   m_SourcePrefab: {fileID: 100100000, guid: b4717a7a031ad2d4cb8585a4fe45859c, type: 3}
---- !u!4 &728202820 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: b4717a7a031ad2d4cb8585a4fe45859c,
-    type: 3}
-  m_PrefabInstance: {fileID: 728202819}
-  m_PrefabAsset: {fileID: 0}
 --- !u!65 &728202821
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -692,6 +661,33 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!54 &728202823
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 107694194}
+  serializedVersion: 4
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 2
 --- !u!1 &735207093
 GameObject:
   m_ObjectHideFlags: 0
@@ -828,7 +824,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   arSession: {fileID: 0}
   raycastManager: {fileID: 0}
-  petPrefab: {fileID: 121237764}
+  petPrefab: {fileID: 107694194}
   heartPrefab: {fileID: 208419250}
   ballPrefab: {fileID: 61132657}
   starPrefab: {fileID: 1532997645}
@@ -836,10 +832,10 @@ MonoBehaviour:
   ballTMPro: {fileID: 1194329476}
   starTMPro: {fileID: 1264230244}
   controllers:
-  - {fileID: 9100000, guid: fdfba3ae13fdc2a4ea8baf472bd48036, type: 2}
   - {fileID: 9100000, guid: ac45de890a9d61e43bb3bde02839344e, type: 2}
   - {fileID: 9100000, guid: 881ea4b791aa886428b7081af2c18fe4, type: 2}
   - {fileID: 9100000, guid: 2c61388e3f8cc8b4789a1a5db2f04263, type: 2}
+  - {fileID: 9100000, guid: fdfba3ae13fdc2a4ea8baf472bd48036, type: 2}
   objectsToCheckCollision: []
   collisionDistance: 0
 --- !u!1001 &785879762
@@ -2342,6 +2338,7 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 1549501172}
+  - {fileID: 728202819}
   - {fileID: 121237765}
   - {fileID: 61132658}
   - {fileID: 208419251}
