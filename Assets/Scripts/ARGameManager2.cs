@@ -40,6 +40,8 @@ public class ARGameManager2 : MonoBehaviour
     private string prev_shape = "none";
     private int prev_acc = 0;
 
+    private bool isAnimationPlaying = false;
+
     private void Awake()
     {
         if (arSession == null)
@@ -96,6 +98,7 @@ public class ARGameManager2 : MonoBehaviour
     void RotateToFollow(Vector3 targetPosition)
     {
         petAnimator = petObject.GetComponent<Animator>();
+
         petAnimator.applyRootMotion = false;
 
         // 펫과 타겟 사이의 방향 벡터를 계산합니다.
@@ -131,8 +134,12 @@ public class ARGameManager2 : MonoBehaviour
 
     void MoveTo(Vector3 targetPosition)
     {
-        float speed = 1f;
-        petObject.transform.position = Vector3.MoveTowards(petObject.transform.position, targetPosition, speed * Time.deltaTime);
+        float speed = 1.8f;
+
+        if (!isAnimationPlaying)
+        {
+            petObject.transform.position = Vector3.MoveTowards(petObject.transform.position, targetPosition, speed * Time.deltaTime);
+        }
     }
 
     IEnumerator DelayedHandleCollision(Transform obj)
@@ -160,14 +167,15 @@ public class ARGameManager2 : MonoBehaviour
             }
         }
 
-        yield return new WaitForSeconds(0.5f);
-        // 충돌한 오브젝트의 위치를 향해 petObject가 회전합니다.
-        RotateToFollow(obj.position);
-        yield return new WaitForSeconds(0.5f);
+        if (!isAnimationPlaying)
+        {
+            // 충돌한 오브젝트의 위치를 향해 petObject가 회전합니다.
+            RotateToFollow(obj.position);
+            yield return new WaitForSeconds(0.1f);
 
-
-        // 방향 전환 후에 이동합니다.
-        MoveTo(obj.position);
+            // 방향 전환 후에 이동합니다.
+            MoveTo(obj.position);
+        }
 
         isCoroutineRunning = false;
     }
@@ -201,24 +209,32 @@ public class ARGameManager2 : MonoBehaviour
     {
         petAnimator = petObject.GetComponent<Animator>();
         petAnimator.runtimeAnimatorController = controllers[index];
-
-        // 루트 모션 비활성화
-        //petAnimator.applyRootMotion = false;
-
         petAnimator.Play("Idle");
 
-        // 애니메이션 재생이 끝날 때까지 대기합니다.
-        float animationLength = petAnimator.GetCurrentAnimatorClipInfo(0)[0].clip.length;
-        yield return new WaitForSeconds(animationLength);
+        // 애니메이션 클립의 애니메이션 이벤트에 대한 대리자 설정
+        AnimationClip clip = petAnimator.runtimeAnimatorController.animationClips[0];
+        AnimationEvent animationStartEvent = new AnimationEvent();
+        animationStartEvent.functionName = "MoveStop"; // 애니메이션 시작시 MoveStop 호출
+        animationStartEvent.time = 0f;
+        clip.events = new AnimationEvent[] { animationStartEvent }; // 이벤트 배열 재할당 및 추가
+        AnimationEvent animationEndEvent = new AnimationEvent();
+        animationEndEvent.functionName = "MoveStart"; // 애니메이션 종료시 MoveStart 호출
+        animationEndEvent.time = clip.length;
+        clip.AddEvent(animationEndEvent);
 
-        // 루트 모션 다시 활성화
-        //petAnimator.applyRootMotion = true;
+        // 애니메이션 재생이 끝날 때까지 대기
+        while (petAnimator.GetCurrentAnimatorStateInfo(0).normalizedTime < 1.0f)
+        {
+            isAnimationPlaying = true;
+            yield return null;
+        }
 
-        petAnimator.runtimeAnimatorController = controllers[3];  //Walk_forward
+        isAnimationPlaying = false;
 
+        // 애니메이션 재생이 끝나면 Walk_forward 애니메이션으로 전환
+        petAnimator.runtimeAnimatorController = controllers[3];
         petAnimator.Play("Idle");
     }
-
 
     void makeObject(GameObject objectPrefab, string sTag)
     {
@@ -352,5 +368,25 @@ public class ARGameManager2 : MonoBehaviour
     {
         yield return new WaitForSeconds(delay);
         makeObject(objectPrefab, sTag);
+    }
+
+    private void OnAnimationStart()
+    {
+        isAnimationPlaying = true;
+        Debug.Log("Animation Started");
+        // 여기에 원하는 작업 수행
+    }
+
+    private void OnAnimationEnd()
+    {
+        isAnimationPlaying = false;
+        Debug.Log("Animation Ended");
+        // 여기에 원하는 작업 수행
+    }
+
+    // 플래그를 외부에서 확인하기 위한 메서드
+    public bool IsAnimationPlaying()
+    {
+        return isAnimationPlaying;
     }
 }
