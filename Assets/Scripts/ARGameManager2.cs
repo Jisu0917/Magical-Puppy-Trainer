@@ -16,6 +16,10 @@ public class ARGameManager2 : MonoBehaviour
     [SerializeField] GameObject ballPrefab;
     [SerializeField] GameObject starPrefab;
 
+    [SerializeField] GameObject miniHeartPrefab;
+    [SerializeField] GameObject miniBallPrefab;
+    [SerializeField] GameObject miniStarPrefab;
+
     [Header("Textboxes")]
     [SerializeField] private TextMeshProUGUI heartTMPro;
     [SerializeField] private TextMeshProUGUI ballTMPro;
@@ -56,6 +60,10 @@ public class ARGameManager2 : MonoBehaviour
         heartPrefab.SetActive(false);
         ballPrefab.SetActive(false);
         starPrefab.SetActive(false);
+
+        miniHeartPrefab.SetActive(false);
+        miniBallPrefab.SetActive(false);
+        miniStarPrefab.SetActive(false);
     }
 
     void Update()
@@ -183,9 +191,6 @@ public class ARGameManager2 : MonoBehaviour
 
     void HandleCollision(Transform obj)
     {
-        Destroy(obj.gameObject);
-        objectsToCheckCollision.Remove(obj);
-
         float distance = Mathf.Abs(Vector3.Distance(petObject.transform.position, obj.position));
 
         if (distance <= collisionDistance)
@@ -193,17 +198,183 @@ public class ARGameManager2 : MonoBehaviour
             if (obj.gameObject.CompareTag("Heart"))
             {
                 heartTMPro.text = String.Format("Heart : {0}", ++hearts);
+
+                // Heart 오브젝트의 현재 위치
+                Vector3 heartPosition = obj.position;
+
+                // Heart 오브젝트의 현재 각도
+                float heartAngle = obj.eulerAngles.y;
+
+                for (int i = 0; i < 20; i++)
+                {
+                    // 랜덤한 각도를 설정 (Heart 오브젝트를 중심으로 360도 범위)
+                    float randomAngle = UnityEngine.Random.Range(0f, 360f);
+
+                    // 랜덤한 방향 벡터 생성
+                    Vector3 randomDirection = Quaternion.Euler(0f, heartAngle + randomAngle, 0f) * Vector3.forward;
+
+                    // miniHeartPrefab의 생성 위치 설정
+                    Vector3 randomPosition = heartPosition + randomDirection * UnityEngine.Random.Range(0f, 3f);
+
+                    // miniHeartPrefab을 생성하고 애니메이션 적용
+                    GameObject miniHeart = Instantiate(miniHeartPrefab, randomPosition, Quaternion.identity);
+                    miniHeart.SetActive(true);
+
+                    // 애니메이션 적용: 랜덤한 방향으로 오브젝트를 이동시키고, 화면 밖으로 나가도록
+                    StartCoroutine(MoveAndDestroy(miniHeart.transform, randomDirection));
+                }
+
             }
             else if (obj.gameObject.CompareTag("Ball"))
             {
                 ballTMPro.text = String.Format("Ball : {0}", ++balls);
+
+                GameObject miniBall = Instantiate(miniBallPrefab, obj.position, obj.rotation);
+                miniBall.SetActive(true);
+
+                // 충돌한 반대 방향 설정
+                Vector3 collisionDirection = (miniBall.transform.position - petObject.transform.position).normalized;
+
+                // miniBall 오브젝트를 반대 방향으로 회전하면서 굴러가도록 실행
+                StartCoroutine(HandleBallCollision(miniBall.transform, collisionDirection));
             }
             else if (obj.gameObject.CompareTag("Star"))
             {
                 starTMPro.text = String.Format("Star : {0}", ++stars);
+
+                // Star 오브젝트의 현재 위치
+                Vector3 starPosition = obj.position;
+
+                // Star 오브젝트의 현재 각도
+                float starAngle = obj.eulerAngles.y;
+
+                int starCount = 30; // 생성할 miniStar 오브젝트 수
+                float intervalAngle = 360f / starCount; // 각 miniStar 오브젝트 간의 간격
+
+                for (int i = 0; i < starCount; i++)
+                {
+                    // 랜덤한 각도를 설정 (Star 오브젝트를 중심으로 360도 범위)
+                    float angle = starAngle + (intervalAngle * i);
+
+                    // 랜덤한 방향 벡터 생성
+                    Vector3 direction = Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
+
+                    // miniStarPrefab의 생성 위치 설정
+                    Vector3 position = starPosition + direction * 1f; // 일정한 거리(1.5f) 간격으로 배치
+
+                    // miniStarPrefab을 생성하고 애니메이션 적용
+                    GameObject miniStar = Instantiate(miniStarPrefab, position, Quaternion.identity);
+                    miniStar.transform.rotation = Quaternion.Euler(90f, angle, 0f); // 각도를 눕혀줍니다.
+                    miniStar.SetActive(true);
+
+                    // 0.1초마다 안 보이게 했다가 다시 보이게 하는 작업을 반복
+                    StartCoroutine(FadeInOut(miniStar.transform));
+
+                    // 3초가 지나면 miniStar 오브젝트를 파괴
+                    StartCoroutine(DestroyObjectDelayed(miniStar, 3f));
+                }
             }
         }
+
+        Destroy(obj.gameObject);
+        objectsToCheckCollision.Remove(obj);
     }
+
+    IEnumerator FadeInOut(Transform objTransform)
+    {
+        Renderer renderer = objTransform.GetComponent<Renderer>();
+
+        while (true)
+        {
+            // 오브젝트를 안 보이게 함
+            renderer.enabled = false;
+            yield return new WaitForSeconds(0.1f);
+
+            // 오브젝트를 다시 보이게 함
+            renderer.enabled = true;
+            yield return new WaitForSeconds(0.3f);
+        }
+    }
+
+    IEnumerator DestroyObjectDelayed(GameObject obj, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        Destroy(obj);
+    }
+
+
+    IEnumerator MoveAndDestroy(Transform objTransform, Vector3 direction)
+    {
+        float speed = 1.5f;
+        float distance = 0f;
+
+        while (distance < 5f) // 화면 밖으로 이동할 거리 (5f)
+        {
+            // 방향에 따라 x, z 방향으로만 이동하도록 설정
+            Vector3 movement = new Vector3(direction.x, 1, direction.z).normalized * speed * Time.deltaTime;
+            objTransform.Translate(movement);
+
+            // y축 방향으로도 서서히 올라가도록 설정
+            float newY = objTransform.position.y + speed * Time.deltaTime * 0.5f;
+            objTransform.position = new Vector3(objTransform.position.x, newY, objTransform.position.z);
+
+            distance += movement.magnitude;
+            yield return null;
+        }
+
+        // 오브젝트 파괴
+        Destroy(objTransform.gameObject);
+    }
+
+    IEnumerator HandleBallCollision(Transform objTransform, Vector3 collisionDirection)
+    {
+        // 회전 속도 설정
+        float rotationSpeed = 200f;
+
+        // 충돌 반대 방향 설정
+        Vector3 oppositeDirection = -collisionDirection.normalized;
+
+        // 반대 방향으로 오브젝트를 회전시키는데 필요한 각도 계산
+        Quaternion targetRotation = Quaternion.LookRotation(oppositeDirection);
+
+        // 오브젝트를 반대 방향으로 회전시키는데 사용될 현재 회전값
+        Quaternion currentRotation = objTransform.rotation;
+
+        // 현재 각도와 목표 각도 사이의 회전값 보간
+        float t = 0;
+        while (t < 1)
+        {
+            t += Time.deltaTime * rotationSpeed;
+            objTransform.rotation = Quaternion.Lerp(currentRotation, targetRotation, t);
+            yield return null;
+        }
+
+        // 오브젝트가 화면 밖으로 나가거나 충돌 체크하는 부분
+        float distanceMoved = 0f; // 오브젝트가 이동한 거리를 저장할 변수
+        float maxDistance = 4f; // 오브젝트가 이동할 최대 거리
+        while (true)
+        {
+            // 오브젝트를 반대 방향으로 이동하면서 회전
+            Vector3 newDirection = oppositeDirection;
+            newDirection.z = oppositeDirection.z * Time.deltaTime;
+
+            objTransform.Translate(newDirection, Space.World);
+            objTransform.Rotate(Vector3.right, rotationSpeed * Time.deltaTime); // y축 대신 x축을 기준으로 회전
+
+            // 오브젝트가 이동한 거리 누적
+            distanceMoved += Time.deltaTime;
+
+            // 오브젝트가 최대 이동 거리에 도달하면 파괴
+            if (distanceMoved >= maxDistance)
+            {
+                Destroy(objTransform.gameObject);
+                yield break; // 코루틴 종료
+            }
+
+            yield return null;
+        }
+    }
+
 
     IEnumerator PlayAnimationAndWait(int index)
     {
@@ -368,25 +539,5 @@ public class ARGameManager2 : MonoBehaviour
     {
         yield return new WaitForSeconds(delay);
         makeObject(objectPrefab, sTag);
-    }
-
-    private void OnAnimationStart()
-    {
-        isAnimationPlaying = true;
-        Debug.Log("Animation Started");
-        // 여기에 원하는 작업 수행
-    }
-
-    private void OnAnimationEnd()
-    {
-        isAnimationPlaying = false;
-        Debug.Log("Animation Ended");
-        // 여기에 원하는 작업 수행
-    }
-
-    // 플래그를 외부에서 확인하기 위한 메서드
-    public bool IsAnimationPlaying()
-    {
-        return isAnimationPlaying;
     }
 }
