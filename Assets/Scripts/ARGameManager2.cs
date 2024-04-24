@@ -233,10 +233,10 @@ public class ARGameManager2 : MonoBehaviour
                 miniBall.SetActive(true);
 
                 // 충돌한 반대 방향 설정
-                Vector3 collisionDirection = (miniBall.transform.position - petObject.transform.position).normalized;
+                Vector3 collisionDirection = (petObject.transform.position - miniBall.transform.position).normalized;
 
-                // miniBall 오브젝트를 반대 방향으로 회전하면서 굴러가도록 실행
-                StartCoroutine(HandleBallCollision(miniBall.transform, collisionDirection));
+                // miniBall 오브젝트를 카메라 정면 방향을 기준으로 날아오도록 실행
+                StartCoroutine(HandleBallCollision(miniBall.transform, Camera.main));
             }
             else if (obj.gameObject.CompareTag("Star"))
             {
@@ -248,30 +248,44 @@ public class ARGameManager2 : MonoBehaviour
                 // Star 오브젝트의 현재 각도
                 float starAngle = obj.eulerAngles.y;
 
-                int starCount = 30; // 생성할 miniStar 오브젝트 수
-                float intervalAngle = 360f / starCount; // 각 miniStar 오브젝트 간의 간격
+                int ringCount = UnityEngine.Random.Range(1, 4); // 생성할 '링' 개수 (1개 이상 5개 이하)
 
-                for (int i = 0; i < starCount; i++)
+                // 각 링별 속도 설정
+                float[] ringSpeeds = new float[ringCount];
+                float initialSpeed = UnityEngine.Random.Range(1f, 3f); // 초기 속도 설정
+                for (int j = 0; j < ringCount; j++)
                 {
-                    // 랜덤한 각도를 설정 (Star 오브젝트를 중심으로 360도 범위)
-                    float angle = starAngle + (intervalAngle * i);
+                    ringSpeeds[j] = initialSpeed + 0.2f * j; // 링1의 속도가 빨라지도록 설정
+                }
 
-                    // 랜덤한 방향 벡터 생성
-                    Vector3 direction = Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
+                int starCountPerRing = 20; // 각 '링'당 생성할 miniStar 오브젝트 수
 
-                    // miniStarPrefab의 생성 위치 설정
-                    Vector3 position = starPosition + direction * 1f; // 일정한 거리(1.5f) 간격으로 배치
+                for (int j = 0; j < ringCount; j++)
+                {
+                    float ringSpeed = ringSpeeds[j];
 
-                    // miniStarPrefab을 생성하고 애니메이션 적용
-                    GameObject miniStar = Instantiate(miniStarPrefab, position, Quaternion.identity);
-                    miniStar.transform.rotation = Quaternion.Euler(90f, angle, 0f); // 각도를 눕혀줍니다.
-                    miniStar.SetActive(true);
+                    for (int i = 0; i < starCountPerRing; i++)
+                    {
+                        // 랜덤한 각도를 설정 (Star 오브젝트를 중심으로 360도 범위)
+                        float angle = starAngle + (360f / starCountPerRing * i);
 
-                    // 0.1초마다 안 보이게 했다가 다시 보이게 하는 작업을 반복
-                    StartCoroutine(FadeInOut(miniStar.transform));
+                        // '링' 별로 반지름을 다르게 설정하여 '링' 생성
+                        float radius = (j + 1) * 0.5f;
 
-                    // 3초가 지나면 miniStar 오브젝트를 파괴
-                    StartCoroutine(DestroyObjectDelayed(miniStar, 3f));
+                        // 랜덤한 방향 벡터 생성
+                        Vector3 direction = Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
+
+                        // miniStarPrefab의 생성 위치 설정 (충돌 지점에서 생성)
+                        Vector3 position = starPosition + direction * radius;
+
+                        // miniStarPrefab을 생성하고 애니메이션 적용
+                        GameObject miniStar = Instantiate(miniStarPrefab, position, Quaternion.identity);
+                        miniStar.transform.rotation = Quaternion.Euler(90f, angle, 0f); // 각도를 눕혀줍니다.
+                        miniStar.SetActive(true);
+
+                        // miniStar 오브젝트를 화면 밖으로 이동시키고 사라지게 만듭니다.
+                        StartCoroutine(MoveAndDestroyFromGround(miniStar.transform, direction, ringSpeed));
+                    }
                 }
             }
         }
@@ -280,32 +294,9 @@ public class ARGameManager2 : MonoBehaviour
         objectsToCheckCollision.Remove(obj);
     }
 
-    IEnumerator FadeInOut(Transform objTransform)
-    {
-        Renderer renderer = objTransform.GetComponent<Renderer>();
-
-        while (true)
-        {
-            // 오브젝트를 안 보이게 함
-            renderer.enabled = false;
-            yield return new WaitForSeconds(0.1f);
-
-            // 오브젝트를 다시 보이게 함
-            renderer.enabled = true;
-            yield return new WaitForSeconds(0.3f);
-        }
-    }
-
-    IEnumerator DestroyObjectDelayed(GameObject obj, float delay)
-    {
-        yield return new WaitForSeconds(delay);
-        Destroy(obj);
-    }
-
-
     IEnumerator MoveAndDestroy(Transform objTransform, Vector3 direction)
     {
-        float speed = 1.5f;
+        float speed = UnityEngine.Random.Range(0.5f, 3f);
         float distance = 0f;
 
         while (distance < 5f) // 화면 밖으로 이동할 거리 (5f)
@@ -326,55 +317,73 @@ public class ARGameManager2 : MonoBehaviour
         Destroy(objTransform.gameObject);
     }
 
-    IEnumerator HandleBallCollision(Transform objTransform, Vector3 collisionDirection)
+
+    IEnumerator HandleBallCollision(Transform objTransform, Camera mainCamera)
     {
-        // 회전 속도 설정
-        float rotationSpeed = 200f;
+        // 초기 이동 속도 설정
+        float initialMoveSpeed = 5f;
+        float maxMoveSpeed = 20f; // 최대 이동 속도
+        float acceleration = 10f; // 가속도
 
-        // 충돌 반대 방향 설정
-        Vector3 oppositeDirection = -collisionDirection.normalized;
-
-        // 반대 방향으로 오브젝트를 회전시키는데 필요한 각도 계산
-        Quaternion targetRotation = Quaternion.LookRotation(oppositeDirection);
-
-        // 오브젝트를 반대 방향으로 회전시키는데 사용될 현재 회전값
-        Quaternion currentRotation = objTransform.rotation;
-
-        // 현재 각도와 목표 각도 사이의 회전값 보간
-        float t = 0;
-        while (t < 1)
-        {
-            t += Time.deltaTime * rotationSpeed;
-            objTransform.rotation = Quaternion.Lerp(currentRotation, targetRotation, t);
-            yield return null;
-        }
+        // 화면 중앙으로 이동하는 방향 설정
+        Vector3 screenCenter = new Vector3(Screen.width / 2f, Screen.height / 2f, mainCamera.nearClipPlane);
+        Vector3 targetPosition = mainCamera.ScreenToWorldPoint(screenCenter);
+        Vector3 forwardDirection = (targetPosition - objTransform.position).normalized;
 
         // 오브젝트가 화면 밖으로 나가거나 충돌 체크하는 부분
-        float distanceMoved = 0f; // 오브젝트가 이동한 거리를 저장할 변수
-        float maxDistance = 4f; // 오브젝트가 이동할 최대 거리
-        while (true)
+        float elapsedTime = 0f; // 경과 시간을 저장할 변수
+        float destroyTime = 3f; // 오브젝트가 파괴될 시간
+
+        while (elapsedTime < destroyTime)
         {
-            // 오브젝트를 반대 방향으로 이동하면서 회전
-            Vector3 newDirection = oppositeDirection;
-            newDirection.z = oppositeDirection.z * Time.deltaTime;
+            // 현재 이동 속도 계산 (가속도를 적용하여 점진적으로 증가)
+            float currentMoveSpeed = Mathf.Min(initialMoveSpeed + acceleration * elapsedTime, maxMoveSpeed);
 
-            objTransform.Translate(newDirection, Space.World);
-            objTransform.Rotate(Vector3.right, rotationSpeed * Time.deltaTime); // y축 대신 x축을 기준으로 회전
+            // 이동
+            objTransform.Translate(forwardDirection * currentMoveSpeed * Time.deltaTime, Space.World); // 월드 공간에서 이동
 
-            // 오브젝트가 이동한 거리 누적
-            distanceMoved += Time.deltaTime;
+            // 회전 (오브젝트가 up 축을 기준으로 회전)
+            objTransform.Rotate(Vector3.up, 100f * Time.deltaTime); // 회전 속도 조절 가능
 
-            // 오브젝트가 최대 이동 거리에 도달하면 파괴
-            if (distanceMoved >= maxDistance)
+            // 화면 중앙에 도달했을 때 충돌
+            if (Vector3.Distance(objTransform.position, targetPosition) < 0.5f)
             {
-                Destroy(objTransform.gameObject);
-                yield break; // 코루틴 종료
+                // 오브젝트 충돌 처리
+                yield return new WaitForSeconds(0.1f);
+                Debug.Log("miniBall이 화면 중앙에 도달하여 충돌했습니다.");
+                break;
             }
+
+            // 경과 시간 업데이트
+            elapsedTime += Time.deltaTime;
 
             yield return null;
         }
+
+        // 시간이 지난 후에 오브젝트 파괴
+        Destroy(objTransform.gameObject);
     }
 
+
+
+
+    IEnumerator MoveAndDestroyFromGround(Transform objTransform, Vector3 direction, float speed)
+    {
+        float distance = 0f;
+
+        while (distance < 5f) // 화면 밖으로 이동할 거리 (5f)
+        {
+            // x, z 방향으로만 이동하도록 설정
+            Vector3 movement = new Vector3(direction.x, 0, direction.z).normalized * speed * Time.deltaTime;
+            objTransform.Translate(movement, Space.World);
+
+            distance += movement.magnitude;
+            yield return null;
+        }
+
+        // 오브젝트 파괴
+        Destroy(objTransform.gameObject);
+    }
 
     IEnumerator PlayAnimationAndWait(int index)
     {
