@@ -32,6 +32,7 @@ public class ARGameManager2 : MonoBehaviour
     GameObject petObject;
     Animator petAnimator;
 
+    Vector3 initialCameraPosition;
     private Vector3 lastCameraPosition;
     private bool isCoroutineRunning = false;
 
@@ -45,6 +46,7 @@ public class ARGameManager2 : MonoBehaviour
     private int prev_acc = 0;
 
     private bool isAnimationPlaying = false;
+    private bool isCollisionHandling = false;
 
     private void Awake()
     {
@@ -64,14 +66,31 @@ public class ARGameManager2 : MonoBehaviour
         miniHeartPrefab.SetActive(false);
         miniBallPrefab.SetActive(false);
         miniStarPrefab.SetActive(false);
+
+
+        StartCoroutine(AdjustCameraPositionToCenter(false)); // 펫 오브젝트 생성
+
+        initialCameraPosition = Camera.main.transform.position; // 초기 카메라 위치 저장
+
     }
 
     void Update()
     {
-        if (!isCoroutineRunning && arSession.enabled && Camera.main.transform.position != lastCameraPosition)
+        // 카메라 이동량 계산
+        float cameraMovement = Vector3.Distance(Camera.main.transform.position, initialCameraPosition);
+
+        // 카메라 이동량이 일정 값 이상이면 AdjustCameraPositionToCenter 함수 호출
+        if (cameraMovement > 0.01f)
         {
-            StartCoroutine(AdjustCameraPositionToCenter());
-            lastCameraPosition = Camera.main.transform.position;
+            if (cameraMovement > 0.03f)
+            {
+                StartCoroutine(AdjustCameraPositionToCenter(true)); // 펫 오브젝트 순간 이동
+            }
+            else
+            {
+                StartCoroutine(AdjustCameraPositionToCenter(false)); // 펫 오브젝트 걸어서 이동
+            }
+            initialCameraPosition = Camera.main.transform.position; // 초기 카메라 위치 갱신
         }
 
         if (shape != prev_shape || (shape == prev_shape && acc != prev_acc))
@@ -105,6 +124,8 @@ public class ARGameManager2 : MonoBehaviour
 
     void RotateToFollow(Vector3 targetPosition)
     {
+        isCollisionHandling = true;
+
         petAnimator = petObject.GetComponent<Animator>();
 
         petAnimator.applyRootMotion = false;
@@ -142,6 +163,8 @@ public class ARGameManager2 : MonoBehaviour
 
     void MoveTo(Vector3 targetPosition)
     {
+        isCollisionHandling = true;
+
         float speed = 1.8f;
 
         if (!isAnimationPlaying)
@@ -152,6 +175,7 @@ public class ARGameManager2 : MonoBehaviour
 
     IEnumerator DelayedHandleCollision(Transform obj)
     {
+        isCollisionHandling = true;
         isCoroutineRunning = true;
 
         float distance = Mathf.Abs(Vector3.Distance(petObject.transform.position, obj.position));
@@ -186,6 +210,7 @@ public class ARGameManager2 : MonoBehaviour
         }
 
         isCoroutineRunning = false;
+        isCollisionHandling = false;
     }
 
 
@@ -364,9 +389,6 @@ public class ARGameManager2 : MonoBehaviour
         Destroy(objTransform.gameObject);
     }
 
-
-
-
     IEnumerator MoveAndDestroyFromGround(Transform objTransform, Vector3 direction, float speed)
     {
         float distance = 0f;
@@ -474,7 +496,7 @@ public class ARGameManager2 : MonoBehaviour
         Debug.LogWarning("Failed to find suitable position within " + maxAttempts + " attempts.");
     }
 
-    IEnumerator AdjustCameraPositionToCenter()
+    IEnumerator AdjustCameraPositionToCenter(bool tooFar)
     {
         if (isCoroutineRunning)
         {
@@ -484,7 +506,7 @@ public class ARGameManager2 : MonoBehaviour
         isCoroutineRunning = true;
         Debug.Log("Adjusting camera position to center...");
 
-        Vector2 screenCenter = new Vector2(Screen.width * 0.5f, Screen.height * 0.1f);
+        Vector2 screenCenter = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
 
         float elapsedTime = 0f;
 
@@ -520,6 +542,27 @@ public class ARGameManager2 : MonoBehaviour
                         petAnimator = petObject.AddComponent<Animator>();
                     }
                 }
+                else
+                {
+                    if (!isCollisionHandling && !isAnimationPlaying)
+                    {
+                        if (tooFar)
+                        {
+                            petObject.transform.position = newPosition;
+                            petObject.transform.rotation = petRotation;
+                        }
+                        else
+                        {
+                            Vector3 directionToTarget = newPosition - petObject.transform.position;
+                            Quaternion targetRotation = Quaternion.LookRotation(directionToTarget);
+                            petObject.transform.rotation = Quaternion.Lerp(petObject.transform.rotation, targetRotation, Time.deltaTime * 5f);
+
+                            float speed = 5.0f;
+                            petObject.transform.position = Vector3.MoveTowards(petObject.transform.position, newPosition, speed * Time.deltaTime);
+
+                        }
+                    }
+                }
 
                 isCoroutineRunning = false;
                 yield break;
@@ -533,8 +576,11 @@ public class ARGameManager2 : MonoBehaviour
         }
 
         Debug.LogWarning("AR plane not detected within 10 seconds.");
+        
         isCoroutineRunning = false;
+        
     }
+
 
     void makeRandomObjects(GameObject objectPrefab, string sTag, int count)
     {
