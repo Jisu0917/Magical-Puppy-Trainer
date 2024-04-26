@@ -455,7 +455,7 @@ GameObject:
   - component: {fileID: 167519095}
   - component: {fileID: 167519094}
   m_Layer: 0
-  m_Name: NextSceneScript (1)
+  m_Name: HandARSceneScript
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1111,7 +1111,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: NEXT
+  m_text: AUTO
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -2623,7 +2623,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: NEXT
+  m_text: HAND
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -2711,7 +2711,7 @@ GameObject:
   - component: {fileID: 1360737616}
   - component: {fileID: 1360737617}
   m_Layer: 0
-  m_Name: NextSceneScript
+  m_Name: AutoARSceneScript
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2758,7 +2758,7 @@ GameObject:
   - component: {fileID: 1422040341}
   - component: {fileID: 1422040340}
   m_Layer: 5
-  m_Name: Next Scene Button (1)
+  m_Name: Hand AR Scene Button
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2781,8 +2781,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: -164, y: 97}
-  m_SizeDelta: {x: 300, y: 200}
+  m_AnchoredPosition: {x: -190, y: 120}
+  m_SizeDelta: {x: 250, y: 150}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1422040340
 MonoBehaviour:
@@ -2837,7 +2837,7 @@ MonoBehaviour:
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
-          m_StringArgument: 
+          m_StringArgument: ARItemScene
           m_BoolArgument: 0
         m_CallState: 2
 --- !u!114 &1422040341
@@ -3945,7 +3945,7 @@ GameObject:
   - component: {fileID: 1884908442}
   - component: {fileID: 1884908441}
   m_Layer: 5
-  m_Name: Next Scene Button
+  m_Name: Auto AR Scene Button
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3968,8 +3968,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 154, y: 97}
-  m_SizeDelta: {x: 300, y: 200}
+  m_AnchoredPosition: {x: 168, y: 120}
+  m_SizeDelta: {x: 250, y: 150}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1884908441
 MonoBehaviour:
@@ -4024,7 +4024,7 @@ MonoBehaviour:
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
-          m_StringArgument: 
+          m_StringArgument: ARItemScene2
           m_BoolArgument: 0
         m_CallState: 2
 --- !u!114 &1884908442

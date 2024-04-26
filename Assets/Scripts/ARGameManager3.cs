@@ -6,7 +6,7 @@ using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
 using TMPro;
 
-public class ARGameManager2 : MonoBehaviour
+public class ARGameManager3 : MonoBehaviour
 {
     [Header("AR Objects")]
     [SerializeField] ARSession arSession;
@@ -36,13 +36,12 @@ public class ARGameManager2 : MonoBehaviour
     GameObject petObject;
     Animator petAnimator;
 
-    Vector3 initialCameraPosition;
     private Vector3 lastCameraPosition;
     private bool isCoroutineRunning = false;
 
     [SerializeField] public List<RuntimeAnimatorController> controllers = new List<RuntimeAnimatorController>();
     [SerializeField] List<Transform> objectsToCheckCollision = new List<Transform>();
-    [SerializeField] float collisionDistance = 0.0f;
+    [SerializeField] float collisionDistance = 0.5f;
 
     public static string shape = "";
     public static int acc = 0;
@@ -51,6 +50,7 @@ public class ARGameManager2 : MonoBehaviour
 
     private bool isAnimationPlaying = false;
     private bool isCollisionHandling = false;
+    private bool isAdjustingRunning = false;
 
     private void Awake()
     {
@@ -75,30 +75,16 @@ public class ARGameManager2 : MonoBehaviour
         miniBallPrefab.SetActive(false);
         miniStarPrefab.SetActive(false);
 
-
-        StartCoroutine(AdjustCameraPositionToCenter(false)); // 펫 오브젝트 생성
-
-        initialCameraPosition = Camera.main.transform.position; // 초기 카메라 위치 저장
-
+        AdjustCameraPositionToCenter();  // 펫 오브젝트 생성
     }
 
     void Update()
     {
-        // 카메라 이동량 계산
-        float cameraMovement = Vector3.Distance(Camera.main.transform.position, initialCameraPosition);
-
-        // 카메라 이동량이 일정 값 이상이면 AdjustCameraPositionToCenter 함수 호출
-        if (cameraMovement > 0.01f)
+        // 현재 카메라 위치와 이전 카메라 위치가 다를 때 AdjustCameraPositionToCenter 코루틴을 실행합니다.
+        if (!isAdjustingRunning && arSession.enabled && Camera.main.transform.position != lastCameraPosition)
         {
-            if (cameraMovement > 0.03f)
-            {
-                StartCoroutine(AdjustCameraPositionToCenter(true)); // 펫 오브젝트 순간 이동
-            }
-            else
-            {
-                StartCoroutine(AdjustCameraPositionToCenter(false)); // 펫 오브젝트 걸어서 이동
-            }
-            initialCameraPosition = Camera.main.transform.position; // 초기 카메라 위치 갱신
+            StartCoroutine(AdjustCameraPositionToCenter());
+            lastCameraPosition = Camera.main.transform.position;
         }
 
         if (shape != prev_shape || (shape == prev_shape && acc != prev_acc))
@@ -122,10 +108,12 @@ public class ARGameManager2 : MonoBehaviour
 
         if (petObject != null)
         {
-            Transform nearestObject = FindNearestObject();
-            if (nearestObject != null)
+            foreach (var obj in objectsToCheckCollision)
             {
-                StartCoroutine(DelayedHandleCollision(nearestObject));
+                if (Vector3.Distance(petObject.transform.position, obj.position) < collisionDistance)
+                {
+                    StartCoroutine(DelayedHandleCollision(obj));
+                }
             }
         }
     }
@@ -148,38 +136,6 @@ public class ARGameManager2 : MonoBehaviour
         petAnimator.applyRootMotion = true;
     }
 
-    Transform FindNearestObject()
-    {
-        if (objectsToCheckCollision.Count == 0)
-            return null;
-
-        Transform nearestObject = objectsToCheckCollision[0];
-        float shortestDistance = Vector3.Distance(petObject.transform.position, nearestObject.position);
-
-        foreach (var obj in objectsToCheckCollision)
-        {
-            float distance = Vector3.Distance(petObject.transform.position, obj.position);
-            if (distance < shortestDistance)
-            {
-                shortestDistance = distance;
-                nearestObject = obj;
-            }
-        }
-
-        return nearestObject;
-    }
-
-    void MoveTo(Vector3 targetPosition)
-    {
-        isCollisionHandling = true;
-
-        float speed = 1.8f;
-
-        if (!isAnimationPlaying)
-        {
-            petObject.transform.position = Vector3.MoveTowards(petObject.transform.position, targetPosition, speed * Time.deltaTime);
-        }
-    }
 
     IEnumerator DelayedHandleCollision(Transform obj)
     {
@@ -212,9 +168,6 @@ public class ARGameManager2 : MonoBehaviour
             // 충돌한 오브젝트의 위치를 향해 petObject가 회전합니다.
             RotateToFollow(obj.position);
             yield return new WaitForSeconds(0.1f);
-
-            // 방향 전환 후에 이동합니다.
-            MoveTo(obj.position);
         }
 
         isCoroutineRunning = false;
@@ -269,7 +222,7 @@ public class ARGameManager2 : MonoBehaviour
                 {
                     left_balls--;
                 }
-
+                
                 GameObject miniBall = Instantiate(miniBallPrefab, obj.position, obj.rotation);
                 miniBall.SetActive(true);
 
@@ -460,13 +413,17 @@ public class ARGameManager2 : MonoBehaviour
 
     void makeObject(GameObject objectPrefab, string sTag)
     {
-        int maxAttempts = 10;
+        Debug.Log("makeObject");
+
+        int maxAttempts = 15;
         int attempt = 0;
+        float maxDistanceFromPlane = 1.0f; // AR 평면으로부터 최대 거리
 
         while (attempt < maxAttempts)
         {
-            float randomX = UnityEngine.Random.Range(Screen.width * 0.1f, Screen.width * 0.9f);
-            float randomY = UnityEngine.Random.Range(Screen.height * 0.1f, Screen.height * 0.9f);
+            // 화면 중심을 기준으로 랜덤한 위치 생성
+            float randomX = UnityEngine.Random.Range(Screen.width * 0.3f, Screen.width * 0.7f);
+            float randomY = UnityEngine.Random.Range(Screen.height * 0.3f, Screen.height * 0.7f);
             Vector2 randomScreenPosition = new Vector2(randomX, randomY);
 
             List<ARRaycastHit> hits = new List<ARRaycastHit>();
@@ -476,6 +433,13 @@ public class ARGameManager2 : MonoBehaviour
                 float distance = 1.0f;
                 Vector3 cameraOffset = Camera.main.transform.forward * distance;
                 Vector3 newPosition = pose.position + cameraOffset;
+
+                // AR 평면과의 거리를 측정하여 너무 멀면 위치를 조정합니다.
+                float distanceFromPlane = Vector3.Distance(newPosition, pose.position);
+                if (distanceFromPlane > maxDistanceFromPlane)
+                {
+                    newPosition = pose.position + (newPosition - pose.position).normalized * maxDistanceFromPlane;
+                }
 
                 if (petObject != null && Vector3.Distance(newPosition, petObject.transform.position) < 0.5f)
                 {
@@ -516,29 +480,35 @@ public class ARGameManager2 : MonoBehaviour
         Debug.LogWarning("Failed to find suitable position within " + maxAttempts + " attempts.");
     }
 
-    IEnumerator AdjustCameraPositionToCenter(bool tooFar)
+    IEnumerator AdjustCameraPositionToCenter()
     {
-        if (isCoroutineRunning)
+        // 코루틴이 이미 실행 중이면 더 이상 실행하지 않습니다.
+        if (isAdjustingRunning)
         {
             yield break;
         }
 
-        isCoroutineRunning = true;
+        isAdjustingRunning = true; // 코루틴이 실행 중임을 표시합니다.
         Debug.Log("Adjusting camera position to center...");
 
-        Vector2 screenCenter = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
+        // 화면 중앙을 기준으로 화면 영역 내에서 배치할 위치를 계산합니다.
+        Vector2 screenCenter = new Vector2(Screen.width * 0.5f, Screen.height * 0.3f);
 
-        float elapsedTime = 0f;
+        float elapsedTime = 0f; // 경과 시간을 저장할 변수
 
+        // 일정 시간 동안 반복합니다.
         while (elapsedTime < 10f)
         {
+            // AR 평면을 찾습니다.
             List<ARRaycastHit> hits = new List<ARRaycastHit>();
             if (raycastManager.Raycast(screenCenter, hits, TrackableType.PlaneWithinPolygon))
             {
                 Debug.Log("AR plane detected.");
+                // 가장 가까운 AR 평면을 찾았으면 해당 위치에 petPrefab을 배치합니다.
                 Pose pose = hits[0].pose;
 
-                float distance = 1.0f;
+                // 카메라와 petObject 사이의 거리를 조정합니다.
+                float distance = 1.0f; // 원하는 거리 설정
                 Vector3 cameraOffset = Camera.main.transform.forward * distance;
                 Vector3 newPosition = pose.position + cameraOffset;
 
@@ -546,59 +516,46 @@ public class ARGameManager2 : MonoBehaviour
                 Quaternion petRotation = Quaternion.Euler(0f, cameraRotation.eulerAngles.y, 0f);
                 petRotation *= Quaternion.Euler(0f, 180f, 0f);
 
-                if (petObject == null)
+                // 기존의 petObject가 있다면 위치를 이동시킵니다.
+                if (petObject != null)
+                {
+                    petObject.transform.position = newPosition;
+                    petObject.transform.rotation = petRotation;
+                }
+                else
                 {
                     petObject = Instantiate(petPrefab, newPosition, petRotation);
                     petObject.gameObject.SetActive(true);
-                    makeRandomObjects(heartPrefab, "Heart", left_hearts);
-                    makeRandomObjects(ballPrefab, "Ball", left_balls);
-                    makeRandomObjects(starPrefab, "Star", left_stars);
-
                     Rigidbody rb = petObject.GetComponent<Rigidbody>();
-                    rb.isKinematic = true;
+                    rb.isKinematic = true; // 물리적 영향만 받고 물리적 반응은 발생시키지 않음
                     petAnimator = petObject.GetComponent<Animator>();
                     if (petAnimator == null)
                     {
                         petAnimator = petObject.AddComponent<Animator>();
                     }
-                }
-                else
-                {
-                    if (!isCollisionHandling && !isAnimationPlaying)
-                    {
-                        if (tooFar)
-                        {
-                            petObject.transform.position = newPosition;
-                            petObject.transform.rotation = petRotation;
-                        }
-                        else
-                        {
-                            Vector3 directionToTarget = newPosition - petObject.transform.position;
-                            Quaternion targetRotation = Quaternion.LookRotation(directionToTarget);
-                            petObject.transform.rotation = Quaternion.Lerp(petObject.transform.rotation, targetRotation, Time.deltaTime * 5f);
+                    /*petAnimator.runtimeAnimatorController = controllers[0];*/
 
-                            float speed = 5.0f;
-                            petObject.transform.position = Vector3.MoveTowards(petObject.transform.position, newPosition, speed * Time.deltaTime);
+                    yield return new WaitForSeconds(0.5f);
 
-                        }
-                    }
+                    makeRandomObjects(heartPrefab, "Heart", left_hearts);
+                    makeRandomObjects(ballPrefab, "Ball", left_balls);
+                    makeRandomObjects(starPrefab, "Star", left_stars);
                 }
 
-                isCoroutineRunning = false;
-                yield break;
+                isAdjustingRunning = false; // 코루틴이 종료되었음을 표시합니다.
+                yield break; // 성공하면 코루틴 종료
             }
             else
             {
-                yield return null;
+                //Debug.LogWarning("No AR plane detected at the center of the screen. Retrying...");
+                yield return null; // 평면을 찾지 못했으면 다음 프레임까지 대기
             }
 
-            elapsedTime += Time.deltaTime;
+            elapsedTime += Time.deltaTime; // 경과 시간 업데이트
         }
 
         Debug.LogWarning("AR plane not detected within 10 seconds.");
-        
-        isCoroutineRunning = false;
-        
+        isAdjustingRunning = false; // 코루틴이 종료되었음을 표시합니다.
     }
 
 

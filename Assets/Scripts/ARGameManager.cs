@@ -214,7 +214,7 @@ public class ARGameManager : MonoBehaviour
                     {
                         petAnimator = petObject.AddComponent<Animator>();
                     }
-                    petAnimator.runtimeAnimatorController = controllers[0];
+                    /*petAnimator.runtimeAnimatorController = controllers[0];*/
                 }
 
                 isCoroutineRunning = false; // 코루틴이 종료되었음을 표시합니다.

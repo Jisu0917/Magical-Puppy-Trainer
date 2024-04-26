@@ -107,9 +107,9 @@ public class PluginWrapper3 : MonoBehaviour
                     break;
             }
 
-            ARGameManager.shape = shape;
-            ARGameManager.acc = accuracy;
-            Debug.Log(shape);
+            ARGameManager3.shape = shape;
+            ARGameManager3.acc = accuracy;
+            //Debug.Log(shape);
         }
         else
         {

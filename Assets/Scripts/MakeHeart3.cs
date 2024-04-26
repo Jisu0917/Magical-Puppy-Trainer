@@ -2,7 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
-using TMPro; 
+using TMPro;
+using UnityEngine.SceneManagement;
 
 public class MakeHeart3 : MonoBehaviour
 {
@@ -33,6 +34,15 @@ public class MakeHeart3 : MonoBehaviour
         heartPrefab.SetActive(false);
         ballPrefab.SetActive(false);
         starPrefab.SetActive(false);
+
+        made_hearts = 0;
+        made_balls = 0;
+        made_stars = 0;
+
+        textBall.text = String.Format("Ball : {0}", made_balls);
+        textHeart.text = String.Format("Heart : {0}", made_hearts);
+        textStar.text = String.Format("Star : {0}", made_stars);
+
     }
 
     // 매 프레임마다 호출됩니다.
@@ -47,21 +57,21 @@ public class MakeHeart3 : MonoBehaviour
             {
                 case "circle":
                     textBall.text = String.Format("Ball : {0}", ++made_balls);
-                    makeObject(ballPrefab);
+                    makeObject(ballPrefab, "Ball");
                     break;
                 case "heart":
                     textHeart.text = String.Format("Heart : {0}", ++made_hearts);
-                    makeObject(heartPrefab);
+                    makeObject(heartPrefab, "Heart");
                     break;
                 case "star":
                     textStar.text = String.Format("Star : {0}", ++made_stars);
-                    makeObject(starPrefab);
+                    makeObject(starPrefab, "Star");
                     break;
             }
         }
     }
 
-    void makeObject(GameObject objectPrefab)
+    void makeObject(GameObject objectPrefab, string sTag)
     {
         // 새 오브젝트의 위치 계산
         Vector3 spawnPosition = CalculateSpawnPosition();
@@ -69,6 +79,7 @@ public class MakeHeart3 : MonoBehaviour
         // 오브젝트를 생성합니다.
         GameObject spawnedObject = Instantiate(objectPrefab, spawnPosition, Quaternion.identity);
         spawnedObject.SetActive(true);
+        spawnedObject.tag = sTag;
         spawnedObjects.Add(spawnedObject);
 
         // 중력에 따라 떨어지도록 Rigidbody 추가
@@ -101,4 +112,31 @@ public class MakeHeart3 : MonoBehaviour
 
         return spawnPosition;
     }
+
+    /*private void LoadSceneData(Scene scene, LoadSceneMode mode)
+    {
+        try
+        {
+            // 이전 씬의 정보를 가져옵니다.
+            string previousSceneName = PlayerPrefs.GetString("PreviousScene", "");
+
+            // 이전 씬에서 데이터를 저장합니다.
+            if (previousSceneName.Equals("ARItemScene"))
+            {
+                PlayerPrefs.SetInt("left_hearts", ARGameManager3.left_hearts);
+                PlayerPrefs.SetInt("left_balls", ARGameManager3.left_balls);
+                PlayerPrefs.SetInt("left_stars", ARGameManager3.left_stars);
+            }
+            else if (previousSceneName.Equals("ARItemScene2"))
+            {
+                PlayerPrefs.SetInt("left_hearts", ARGameManager2.left_hearts);
+                PlayerPrefs.SetInt("left_balls", ARGameManager2.left_balls);
+                PlayerPrefs.SetInt("left_stars", ARGameManager2.left_stars);
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError(e);
+        }
+    }*/
 }
