@@ -29,6 +29,10 @@ public class ARGameManager2 : MonoBehaviour
     private int balls = 0;
     private int stars = 0;
 
+    private int left_hearts;
+    private int left_balls;
+    private int left_stars;
+
     GameObject petObject;
     Animator petAnimator;
 
@@ -58,6 +62,10 @@ public class ARGameManager2 : MonoBehaviour
 
     private void Start()
     {
+        left_hearts = MakeHeart3.made_hearts;
+        left_balls = MakeHeart3.made_balls;
+        left_stars = MakeHeart3.made_stars;
+
         petPrefab.SetActive(false);
         heartPrefab.SetActive(false);
         ballPrefab.SetActive(false);
@@ -530,9 +538,9 @@ public class ARGameManager2 : MonoBehaviour
                 {
                     petObject = Instantiate(petPrefab, newPosition, petRotation);
                     petObject.gameObject.SetActive(true);
-                    makeRandomObjects(heartPrefab, "Heart", 10);
-                    makeRandomObjects(ballPrefab, "Ball", 10);
-                    makeRandomObjects(starPrefab, "Star", 10);
+                    makeRandomObjects(heartPrefab, "Heart", left_hearts);
+                    makeRandomObjects(ballPrefab, "Ball", left_hearts);
+                    makeRandomObjects(starPrefab, "Star", left_hearts);
 
                     Rigidbody rb = petObject.GetComponent<Rigidbody>();
                     rb.isKinematic = true;
